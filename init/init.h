@@ -95,10 +95,6 @@ struct service {
     gid_t supp_gids[NR_SVC_SUPP_GIDS];
     size_t nr_supp_gids;
 
-#ifdef HAVE_SELINUX
-    char *seclabel;
-#endif
-
     struct socketinfo *sockets;
     struct svcenvinfo *envvars;
 
