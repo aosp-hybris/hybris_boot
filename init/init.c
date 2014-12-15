@@ -827,10 +827,15 @@ int main(int argc, char **argv)
                         timeout = 0;
 
                 /* After all init.rc parse done, we will switch to new
-                 * init, so break this loop.
+                 * init
+                 * TODO: what if execute new init failed ?
                  */
                 if (action_queue_empty() && !cur_action) {
-                        break;
+                        return run_init_main(argc, argv);
+//                        if (run_init_check() == 0) {
+//                                timeout = 0;
+//                                break;
+//                        }
                 }
 
 #if BOOTCHART
@@ -858,11 +863,9 @@ int main(int argc, char **argv)
                 }
         }
 
-        ERROR("switch init\n");
-
-        // How to fork one and execute following ?
-        return run_init_main(argc, argv);
-//        return 0;
+        // Start to newrootfs init
+//        return run_init_main(argc, argv);
+        return 0;
 }
 
 

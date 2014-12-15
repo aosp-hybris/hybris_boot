@@ -73,12 +73,10 @@
 
 static const char *program;
 
-static void __attribute__((noreturn)) die(const char *msg)
+static int rError(const char *msg)
 {
-        ERROR("%s: %s: %s\n", program, msg, strerror(errno));
-        /* make sure the fprintf can get to the console */
-        sleep(10);
-        exit(1);
+        ERROR("%s: %s\n", msg, strerror(errno));
+        return -1;
 }
 
 static int nuke(const char *what);
@@ -160,18 +158,12 @@ static int nuke(const char *what)
 
         if ( err ) {
                 errno = err;
-                die(what);
+                return rError(what);
         } else {
                 return 0;
         }
 }
 
-
-static void __attribute__((noreturn)) usage(void)
-{
-        fprintf(stderr, "Usage: exec %s [-c consoledev] /real-root /sbin/init [args]\n", program);
-        exit(1);
-}
 
 int run_init_main(int argc, char *argv[])
 {
@@ -179,8 +171,6 @@ int run_init_main(int argc, char *argv[])
         struct statfs sfs;
         int confd;
         int optind = 1;
-
-        ERROR("start run init \n");
 
         /* Command-line options and defaults */
         const char *console = "/dev/console";
@@ -199,82 +189,84 @@ int run_init_main(int argc, char *argv[])
         /* First, parse the command line */
         program = argv[0];
 
-        if (argc > 1) {
-                if (!strcmp(argv[1],"-c")) {
-                        if (argc >= 3) {
-                                console = argv[2];
-                                optind += 2;
-                        } else {
-                                usage();
-                        }
-                }
-        }
-
-//        if ( argc-optind < 2 )
-//                usage();
-
-//        realroot = argv[optind];
-//        init     = argv[optind+1];
-//        initargs = argv+optind+1;
+       /*
+        *  if (argc > 1) {
+        *          if (!strcmp(argv[1],"-c")) {
+        *                  if (argc >= 3) {
+        *                          console = argv[2];
+        *                          optind += 2;
+        *                  } else {
+        *                          usage();
+        *                  }
+        *          }
+        *  }
+        *
+        * if ( argc-optind < 2 )
+        *         usage();
+        *
+        * realroot = argv[optind];
+        * init     = argv[optind+1];
+        * initargs = argv+optind+1;
+        */
 
         realroot = "/newroot";
         init     = "/sbin/init";
         initargs = argv+optind+1;
 
         /* First, change to the new root directory */
-        if ( chdir(realroot) )
-                die("chdir to new root");
-
-        ERROR("1\n");
+        if (chdir(realroot))
+                return rError("chdir to new root");
 
         /* This is a potentially highly destructive program.  Take some
            extra precautions. */
 
         /* Make sure the current directory is not on the same filesystem
            as the root directory */
-        if ( stat("/", &rst) || stat(".", &cst) )
-                die("stat");
+        if (stat("/", &rst) || stat(".", &cst))
+                return rError("stat");
 
-                ERROR("2\n");
-        if ( rst.st_dev == cst.st_dev )
-                die("current directory on the same filesystem as the root");
+        if (rst.st_dev == cst.st_dev)
+                return rError("current directory on the same filesystem as the root");
 
         /* The initramfs should have /init */
-        if ( stat("/init", &ist) || !S_ISREG(ist.st_mode) )
-                die("can't find /init on initramfs");
+        if (stat("/init", &ist) || !S_ISREG(ist.st_mode))
+                return rError("can't find /init on initramfs");
 
         /* Make sure we're on a ramfs */
-        if ( statfs("/", &sfs) )
-                die("statfs /");
-        if ( sfs.f_type != RAMFS_MAGIC && sfs.f_type != TMPFS_MAGIC )
-                die("rootfs not a ramfs or tmpfs");
+        if (statfs("/", &sfs))
+                return rError("statfs /");
+        if (sfs.f_type != RAMFS_MAGIC && sfs.f_type != TMPFS_MAGIC)
+                return rError("rootfs not a ramfs or tmpfs");
 
         /* Okay, I think we should be safe... */
 
         /* Delete rootfs contents */
-        if ( nuke_dir("/") )
-                die("nuking initramfs contents");
+        if (nuke_dir("/"))
+                return rError("nuking initramfs contents");
 
         /* Overmount the root */
-        if ( mount(".", "/", NULL, MS_MOVE, NULL) )
-                die("overmounting root");
+        if (mount(".", "/", NULL, MS_MOVE, NULL))
+                return rError("overmounting root");
 
         /* chroot, chdir */
-        if ( chroot(".") || chdir("/") )
-                die("chroot");
+        if (chroot(".") || chdir("/"))
+                return rError("chroot");
 
         /* Open /dev/console */
-        if ( (confd = open(console, O_RDWR)) < 0 )
-                die("opening console");
-        dup2(confd, 0);
-        dup2(confd, 1);
-        dup2(confd, 2);
-        close(confd);
+        /*
+         * if ((confd = open(console, O_RDWR)) < 0)
+         *         return rError("opening console");
+         *
+         * dup2(confd, 0);
+         * dup2(confd, 1);
+         * dup2(confd, 2);
+         * close(confd);
+         */
 
-        ERROR("3\n");
+        INFO("Switch to another init\n");
+
         /* Spawn init */
         execv(init, initargs);
-        die(init);                      /* Failed to spawn init */
 
-        return 0;
+        return rError(init);                      /* Failed to spawn init */
 }

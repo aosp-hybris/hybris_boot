@@ -35,10 +35,10 @@ service ueventd /sbin/ueventd
     critical
     seclabel u:r:ueventd:s0
 
-service console /bin/sh
-    class core
-    console
-    oneshot
+#service console /bin/sh
+#    class core
+#    console
+#    oneshot
 
 
 # adbd is controlled via property triggers in init.<platform>.usb.rc
@@ -51,4 +51,8 @@ service adbd /sbin/adbd
 # adbd on at boot in emulator
 on property:ro.kernel.qemu=1
     start adbd
+
+#service run-init /sbin/run-init /newroot /sbin/init "$@"
+#    class main
+#    oneshot
 
