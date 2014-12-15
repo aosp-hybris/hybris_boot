@@ -75,7 +75,7 @@ static const char *program;
 
 static void __attribute__((noreturn)) die(const char *msg)
 {
-        fprintf(stderr, "%s: %s: %s\n", program, msg, strerror(errno));
+        ERROR("%s: %s: %s\n", program, msg, strerror(errno));
         /* make sure the fprintf can get to the console */
         sleep(10);
         exit(1);
@@ -194,6 +194,7 @@ int run_init_main(int argc, char *argv[])
         movemount("/run", NEWROOT "/run");
 
         mount("/dev", NEWROOT "/dev", 0, MS_BIND | MS_REC, 0);
+        umount("/dev");
 
         /* First, parse the command line */
         program = argv[0];
@@ -209,16 +210,22 @@ int run_init_main(int argc, char *argv[])
                 }
         }
 
-        if ( argc-optind < 2 )
-                usage();
+//        if ( argc-optind < 2 )
+//                usage();
 
-        realroot = argv[optind];
-        init     = argv[optind+1];
+//        realroot = argv[optind];
+//        init     = argv[optind+1];
+//        initargs = argv+optind+1;
+
+        realroot = "/newroot";
+        init     = "/sbin/init";
         initargs = argv+optind+1;
 
         /* First, change to the new root directory */
         if ( chdir(realroot) )
                 die("chdir to new root");
+
+        ERROR("1\n");
 
         /* This is a potentially highly destructive program.  Take some
            extra precautions. */
@@ -228,6 +235,7 @@ int run_init_main(int argc, char *argv[])
         if ( stat("/", &rst) || stat(".", &cst) )
                 die("stat");
 
+                ERROR("2\n");
         if ( rst.st_dev == cst.st_dev )
                 die("current directory on the same filesystem as the root");
 
@@ -263,6 +271,7 @@ int run_init_main(int argc, char *argv[])
         dup2(confd, 2);
         close(confd);
 
+        ERROR("3\n");
         /* Spawn init */
         execv(init, initargs);
         die(init);                      /* Failed to spawn init */

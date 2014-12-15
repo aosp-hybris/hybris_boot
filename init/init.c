@@ -859,6 +859,12 @@ int main(int argc, char **argv)
         }
 
         ERROR("switch init\n");
+
+        // How to fork one and execute following ?
         return run_init_main(argc, argv);
 //        return 0;
 }
+
+
+// TODO: add simple shell for debug
+// ls, mount, umount, dmesg, cp, cat, echo, vi
