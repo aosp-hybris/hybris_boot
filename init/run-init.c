@@ -55,6 +55,7 @@
 #include <sys/vfs.h>
 
 #include "util.h"
+#include "log.h"
 #include "run-init.h"
 
 /* Make it possible to compile on glibc by including constants that the
@@ -179,6 +180,8 @@ int run_init_main(int argc, char *argv[])
         int confd;
         int optind = 1;
 
+        ERROR("start run init \n");
+
         /* Command-line options and defaults */
         const char *console = "/dev/console";
         const char *realroot;
@@ -189,7 +192,8 @@ int run_init_main(int argc, char *argv[])
         movemount("/proc", NEWROOT "/proc");
         movemount("/sys", NEWROOT "/sys");
         movemount("/run", NEWROOT "/run");
-        mount("/dev", "./dev", 0, MS_BIND | MS_REC, 0);
+
+        mount("/dev", NEWROOT "/dev", 0, MS_BIND | MS_REC, 0);
 
         /* First, parse the command line */
         program = argv[0];

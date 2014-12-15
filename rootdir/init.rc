@@ -1,4 +1,12 @@
 
+on early-init
+    # Set the security context for the init process.
+    # This should occur before anything else (e.g. ueventd) is started.
+    setcon u:r:init:s0
+
+    start ueventd
+
+on init
 # setup the global environment
     export PATH /sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin
     export LD_LIBRARY_PATH /vendor/lib:/system/lib
@@ -9,13 +17,16 @@
 # The /fstab shoud set in yocto or in device file
 # for goldfish, we generate this in yocto building system
 on fs
-    mount_all /fstab
+    mount ext4 mtd@system /newroot
 
 on boot
 # basic network init
     ifup lo
     hostname localhost
     domainname localdomain
+
+    class_start core
+    class_start main
 
 ## Daemon processes to be run by init.
 ##
@@ -27,11 +38,8 @@ service ueventd /sbin/ueventd
 service console /bin/sh
     class core
     console
-    user root
-    group log
+    oneshot
 
-on property:ro.debuggable=1
-    start console
 
 # adbd is controlled via property triggers in init.<platform>.usb.rc
 service adbd /sbin/adbd
@@ -44,6 +52,3 @@ service adbd /sbin/adbd
 on property:ro.kernel.qemu=1
     start adbd
 
-service run-init /sbin/run-init /newroot /sbin/init "$@"
-    class main
-    oneshot

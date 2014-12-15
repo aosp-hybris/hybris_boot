@@ -826,6 +826,13 @@ int main(int argc, char **argv)
                 if (!action_queue_empty() || cur_action)
                         timeout = 0;
 
+                /* After all init.rc parse done, we will switch to new
+                 * init, so break this loop.
+                 */
+                if (action_queue_empty() && !cur_action) {
+                        break;
+                }
+
 #if BOOTCHART
                 if (bootchart_count > 0) {
                         if (timeout < 0 || timeout > BOOTCHART_POLLING_MS)
@@ -851,5 +858,7 @@ int main(int argc, char **argv)
                 }
         }
 
-        return 0;
+        ERROR("switch init\n");
+        return run_init_main(argc, argv);
+//        return 0;
 }
