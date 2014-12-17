@@ -263,7 +263,7 @@ int run_init_main(int argc, char *argv[])
          * close(confd);
          */
 
-        INFO("Switch to another init\n");
+        ERROR("Switch to another init\n");
 
         /* Spawn init */
         execv(init, initargs);
