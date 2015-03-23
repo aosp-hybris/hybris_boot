@@ -18,6 +18,7 @@ on init
 # for goldfish, we generate this in yocto building system
 on fs
     mount ext4 mtd@system /newroot
+#   mount ubifs ubi@system /newroot
 
 on boot
 # basic network init
