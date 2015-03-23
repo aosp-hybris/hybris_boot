@@ -43,4 +43,7 @@ int make_dir(const char *path, mode_t mode);
 int restorecon(const char *pathname);
 void movemount(const char *src, const char *dest);
 
+int ubi_attach_mtd(const char *name);
+int ubi_detach_dev(int dev);
+
 #endif
