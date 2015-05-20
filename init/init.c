@@ -47,7 +47,6 @@
 #include "init.h"
 #include "log.h"
 #include "property_service.h"
-#include "bootchart.h"
 #include "signal_handler.h"
 #include "init_parser.h"
 #include "util.h"
@@ -55,10 +54,6 @@
 #include "run-init.h"
 
 static int property_triggers_enabled = 0;
-
-#if BOOTCHART
-static int   bootchart_count;
-#endif
 
 static char console[32];
 static char bootmode[32];
@@ -684,22 +679,6 @@ static int queue_property_triggers_action(int nargs, char **args)
         return 0;
 }
 
-#if BOOTCHART
-static int bootchart_init_action(int nargs, char **args)
-{
-        bootchart_count = bootchart_init();
-        if (bootchart_count < 0) {
-                ERROR("bootcharting init failure\n");
-        } else if (bootchart_count > 0) {
-                NOTICE("bootcharting started (period=%d ms)\n", bootchart_count*BOOTCHART_POLLING_MS);
-        } else {
-                NOTICE("bootcharting ignored\n");
-        }
-
-        return 0;
-}
-#endif
-
 int main(int argc, char **argv)
 {
         int fd_count = 0;
@@ -792,10 +771,6 @@ int main(int argc, char **argv)
         /* run all property triggers based on current state of the properties */
         queue_builtin_action(queue_property_triggers_action, "queue_property_triggers");
 
-#if BOOTCHART
-        queue_builtin_action(bootchart_init_action, "bootchart_init");
-#endif
-
         for(;;) {
                 int nr, i, timeout = -1;
 
@@ -837,17 +812,6 @@ int main(int argc, char **argv)
 //                                break;
 //                        }
                 }
-
-#if BOOTCHART
-                if (bootchart_count > 0) {
-                        if (timeout < 0 || timeout > BOOTCHART_POLLING_MS)
-                                timeout = BOOTCHART_POLLING_MS;
-                        if (bootchart_step() < 0 || --bootchart_count == 0) {
-                                bootchart_finish();
-                                bootchart_count = 0;
-                        }
-                }
-#endif
 
                 nr = poll(ufds, fd_count, timeout);
                 if (nr <= 0)
